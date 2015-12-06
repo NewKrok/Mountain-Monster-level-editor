@@ -6,7 +6,7 @@ package leveleditor
 	
 	public class BaseUIComponent extends Sprite
 	{
-		private static const PIXEL_SNAP_VALUE:int = 20;
+		public static const PIXEL_SNAP_VALUE:int = 20;
 		
 		private var _lastStageSize:Point = new Point;
 		

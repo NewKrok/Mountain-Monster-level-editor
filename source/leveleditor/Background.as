@@ -3,14 +3,16 @@ package leveleditor
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Sprite;
-	
+
 	public class Background extends BaseUIComponent
 	{
 		private const LARGE_RECTANGLE_SIZE:int = 200;
 		private const SMALL_RECTANGLE_SIZE:int = 20;
 		
 		protected var _bitmapBackground:Bitmap;
-		
+
+		protected var _scale:Number = 1;
+
 		public function Background()
 		{
 		}
@@ -28,7 +30,9 @@ package leveleditor
 		protected function draw( ):void
 		{
 			removeBitmapBackground( );
+
 			_bitmapBackground = createBitmapBackgroundFromVectorGraphics( createVectorGraphics( ) );
+
 			addChild( _bitmapBackground );
 		}
 		
@@ -49,9 +53,12 @@ package leveleditor
 			vectorGraphics.graphics.beginFill( 0x416BBB );
 			vectorGraphics.graphics.drawRect( 0, 0, stage.stageWidth, stage.stageHeight );
 			vectorGraphics.graphics.endFill( );
-			
-			fillVectorGraphicsWithRectangles( vectorGraphics, 1, 0x6F9FFF, .5, LARGE_RECTANGLE_SIZE );
-			fillVectorGraphicsWithRectangles( vectorGraphics, 1, 0x6F9FFF, .1, SMALL_RECTANGLE_SIZE );
+
+			if ( this._scale > .5 )
+			{
+				fillVectorGraphicsWithRectangles( vectorGraphics, 1, 0x6F9FFF, .5, LARGE_RECTANGLE_SIZE * _scale );
+				fillVectorGraphicsWithRectangles( vectorGraphics, 1, 0x6F9FFF, .1, SMALL_RECTANGLE_SIZE * _scale );
+			}
 			
 			return vectorGraphics;
 		}
@@ -80,6 +87,13 @@ package leveleditor
 			vectorGraphics = null;
 			
 			return new Bitmap( baseBitmapData );
+		}
+
+		public function setScale( scale:Number ):void
+		{
+			this._scale = scale;
+
+			this.draw();
 		}
 	}
 }

@@ -4,7 +4,6 @@ package
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
-	import flash.geom.Point;
 	
 	import leveleditor.Background;
 	import leveleditor.DeviceView;
@@ -13,6 +12,8 @@ package
 	import leveleditor.ImportPanel;
 	import leveleditor.Menu;
 	import leveleditor.SizeHelper;
+	import leveleditor.ZoomView;
+	import leveleditor.events.EditorWorldEvent;
 	import leveleditor.events.ImportEvent;
 	import leveleditor.events.MenuEvent;
 	
@@ -26,6 +27,7 @@ package
 		protected var _editorWorld:EditorWorld;
 		protected var _deviceView:DeviceView;
 		protected var _sizeHelper:SizeHelper;
+		protected var _zoomView:ZoomView;
 		protected var _menu:Menu;
 		protected var _importPanel:ImportPanel;
 		protected var _exportPanel:ExportPanel;
@@ -49,15 +51,16 @@ package
 			addChild( _editorWorld = new EditorWorld );
 			addChild( _deviceView = new DeviceView );
 			addChild( _sizeHelper = new SizeHelper( ) );
-			
+			addChild( _zoomView = new ZoomView( ) );
+
 			_menu = new Menu;
 			_menu.addEventListener( MenuEvent.IMPORT_REQUEST, onImportRequestHandler );
 			_menu.addEventListener( MenuEvent.EXPORT_REQUEST, onExportRequestHandler );
 			_menu.addEventListener( MenuEvent.CHANGE_CAMERA_VIEW_VISIBILITY, onChangeCameraVisibilityHandler );
 			_menu.addEventListener( MenuEvent.JUMP_VIEW_TO_START_REQUEST, onJumpToStartHandler );
 			_menu.addEventListener( MenuEvent.JUMP_VIEW_TO_END_REQUEST, onJumpToEndHandler );
-			//_menu.addEventListener( MenuEvent.ZOOM_IN_REQUEST, onJumpToEndHandler );
-			//_menu.addEventListener( MenuEvent.ZOOM_OUT_REQUEST, onJumpToEndHandler );
+			_menu.addEventListener( MenuEvent.ZOOM_IN_REQUEST, zoomInHandler );
+			_menu.addEventListener( MenuEvent.ZOOM_OUT_REQUEST, zoomOutHandler );
 			_menu.addEventListener( MenuEvent.SET_CONTROL_TO_SELECT, onSetControlToSelectHandler );
 			_menu.addEventListener( MenuEvent.SET_CONTROL_TO_ADD, onSetControlToAddNodeHandler );
 			_menu.addEventListener( MenuEvent.SET_CONTROL_TO_REMOVE, onSetControlToRemoveNodeHandler );
@@ -66,6 +69,7 @@ package
 			addChild( _menu );
 			
 			_editorWorld.jumpToStart( _deviceView.getCurrentDeviceViewPort( ) );
+			this._editorWorld.addEventListener( EditorWorldEvent.ON_VIEW_RESIZE, this.onEditorWorldResize );
 			
 			addChild( _importPanel = new ImportPanel );
 			_importPanel.addEventListener( ImportEvent.DATA_IMPORTED, onDataImportedHandler );
@@ -79,6 +83,15 @@ package
 		{
 			_importPanel.show( );
 			KeyboardOperator.pause( );
+		}
+
+		protected function onEditorWorldResize( e:EditorWorldEvent ):void
+		{
+			var zoomValue:Number = e.data as Number;
+
+			this._background.setScale( zoomValue );
+
+			_zoomView.setZoom( zoomValue );
 		}
 
 		protected function onDataImportedHandler( e:ImportEvent ):void
@@ -121,6 +134,16 @@ package
 		protected function onJumpToEndHandler( e:MenuEvent ):void
 		{
 			_editorWorld.jumpToEnd( _deviceView.getCurrentDeviceViewPort( ) );
+		}
+
+		protected function zoomInHandler( e:MenuEvent ):void
+		{
+			_editorWorld.zoomIn();
+		}
+
+		protected function zoomOutHandler( e:MenuEvent ):void
+		{
+			_editorWorld.zoomOut();
 		}
 
 		protected function onSetControlToSelectHandler( e:MenuEvent ):void
