@@ -5,7 +5,7 @@ package leveleditor
 	import flash.geom.Point;
 	import flash.text.TextField;
 	
-	import leveleditor.data.LevelData;
+	import leveleditor.data.LevelDataVO;
 	import leveleditor.events.ImportEvent;
 	import leveleditor.events.MenuEvent;
 
@@ -49,7 +49,7 @@ package leveleditor
 			dispatchEvent( new MenuEvent( MenuEvent.CLOSE_REQUEST ) );
 		}
 		
-		protected function convertLevelDataToJSONString( levelData:LevelData ):String
+		protected function convertLevelDataToJSONString( levelData:LevelDataVO ):String
 		{
 			var data:Object = {};
 			
@@ -58,11 +58,12 @@ package leveleditor
 			data.bridgePoints = levelData.bridgePoints;
 			data.startPoint = levelData.startPoint;
 			data.finishPoint = levelData.finishPoint;
-				
+			data.libraryElements = levelData.libraryElements;
+
 			return JSON.stringify( data );
 		}
 		
-		public function show( levelData:LevelData ):void
+		public function show( levelData:LevelDataVO ):void
 		{
 			visible = true;
 			

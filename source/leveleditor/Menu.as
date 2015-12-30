@@ -1,8 +1,6 @@
 package leveleditor
 {
-	import flash.display.DisplayObject;
 	import flash.display.SimpleButton;
-	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
@@ -41,9 +39,14 @@ package leveleditor
 			addButtonListeners( );
 			addCharListeners( );
 			
-			_selectionToolButton.dispatchEvent( new MouseEvent( MouseEvent.CLICK ) );
+			this.reset();
 			
 			stage.addEventListener( MouseEvent.MOUSE_UP, onStageMouseUpHandler );
+		}
+
+		public function reset():void
+		{
+			_selectionToolButton.dispatchEvent( new MouseEvent( MouseEvent.CLICK ) );
 		}
 		
 		protected function processButtonsFromLibrary( ):void
@@ -197,14 +200,15 @@ package leveleditor
 		
 		override protected function stageResized( ):void
 		{
-			if ( x + width > stage.stageWidth )
+			if ( this.x + this.width > this.stage.stageWidth )
 			{
-				x = stage.stageWidth - width;
+				this.x = this.stage.stageWidth - this.width;
+				this.x = Math.max( 0, this.x );
 			}
 			
-			if ( y + height > stage.stageHeight )
+			if ( this.y + this.height > this.stage.stageHeight )
 			{
-				y = stage.stageHeight - height;
+				this.y = this.stage.stageHeight - this.height;
 			}
 		}
 	}

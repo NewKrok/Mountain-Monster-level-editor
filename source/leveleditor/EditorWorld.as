@@ -7,9 +7,12 @@ package leveleditor
 	import flash.text.TextField;
 	import flash.text.TextFormat;
 
+	import leveleditor.assets.library.LibraryElementVO;
+
 	import leveleditor.controller.BridgeToolController;
 	import leveleditor.controller.StarToolController;
-	import leveleditor.data.LevelData;
+	import leveleditor.data.LevelDataVO;
+	import leveleditor.events.EditorLibraryEvent;
 	import leveleditor.events.EditorWorldEvent;
 
 	public class EditorWorld extends BaseUIComponent
@@ -28,6 +31,7 @@ package leveleditor
 		protected var _background:Sprite;
 		protected var _markerContainer:Sprite;
 		protected var _starContainer:Sprite;
+		protected var _libraryElementContainer:Sprite;
 		protected var _bridgeContainer:Sprite;
 		protected var _lineContainer:Sprite;
 		protected var _graphicsMarkContainer:Sprite;
@@ -35,6 +39,7 @@ package leveleditor
 
 		protected var _nodeViews:Vector.<NodeView> = new Vector.<NodeView>;
 		protected var _sizeMarkers:Vector.<TextField> = new Vector.<TextField>;
+		protected var _libraryElements:Vector.<LibraryElement> = new Vector.<LibraryElement>;
 
 		protected var _controlType:String = '';
 		protected var _dragStartPoint:Point = new Point;
@@ -59,6 +64,7 @@ package leveleditor
 			addChild( _background = new Sprite );
 			addChild( _markerContainer = new Sprite );
 			addChild( _starContainer = new Sprite );
+			addChild( _libraryElementContainer = new Sprite );
 			addChild( _bridgeContainer = new Sprite );
 			addChild( _lineContainer = new Sprite );
 			addChild( _graphicsMarkContainer = new Sprite );
@@ -85,7 +91,7 @@ package leveleditor
 
 		protected function onMouseDownHandler( e:MouseEvent ):void
 		{
-			if( _blockWorldDrag || e.target == _finishMarker || e.target == _startMarker )
+			if( _blockWorldDrag || e.target == _finishMarker || e.target == _startMarker || e.target is LibraryElement )
 			{
 				return;
 			}
@@ -295,6 +301,7 @@ package leveleditor
 
 			_starToolController.deactivate();
 			_bridgeToolController.deactivate();
+			this.deactivateLibraryElements();
 
 			removeControllerListeners();
 
@@ -309,6 +316,7 @@ package leveleditor
 			{
 				case CONTROL_TYPE_SELECT:
 					setControlToSelectNode();
+					this.activateLibraryElements();
 					break;
 				case CONTROL_TYPE_ADD_NODE:
 					setControlToAddNode();
@@ -336,6 +344,58 @@ package leveleditor
 
 			removeEventListener( MouseEvent.CLICK, removeNodeHandler );
 			removeEventListener( MouseEvent.MOUSE_MOVE, selectNearestNodeToRemove );
+		}
+
+		public function addLibraryElement( elementVO:LibraryElementVO ):void
+		{
+			elementVO.position.x -= this.x;
+			elementVO.position.y -= this.y;
+
+			var libraryElement:LibraryElement = new LibraryElement( elementVO );
+			libraryElement.addEventListener( EditorLibraryEvent.REMOVE_ELEMENT_FROM_WORLD_REQUEST, this.onRemoveLibraryElementRequestHandler );
+
+			this._libraryElements.push( libraryElement );
+			this._libraryElementContainer.addChild( libraryElement );
+
+			libraryElement.activate();
+		}
+
+		private function onRemoveLibraryElementRequestHandler( e:EditorLibraryEvent ):void
+		{
+			var length:int = this._libraryElements.length;
+
+			for( var i:int = 0; i < length; i++ )
+			{
+				if( this._libraryElements[ i ] == e.currentTarget )
+				{
+					this._libraryElements[ i ].removeEventListener( EditorLibraryEvent.REMOVE_ELEMENT_FROM_WORLD_REQUEST, this.onRemoveLibraryElementRequestHandler );
+					this._libraryElements[ i ].deactivate();
+					this._libraryElementContainer.removeChild( this._libraryElements[ i ] );
+					this._libraryElements[ i ] = null;
+					this._libraryElements.splice( i, 1 );
+					break;
+				}
+			}
+		}
+
+		private function activateLibraryElements():void
+		{
+			var length:int = this._libraryElements.length;
+
+			for( var i:int = 0; i < length; i++ )
+			{
+				this._libraryElements[ i ].activate();
+			}
+		}
+
+		private function deactivateLibraryElements():void
+		{
+			var length:int = this._libraryElements.length;
+
+			for( var i:int = 0; i < length; i++ )
+			{
+				this._libraryElements[ i ].deactivate();
+			}
 		}
 
 		protected function setControlToSelectNode():void
@@ -471,7 +531,7 @@ package leveleditor
 			}
 		}
 
-		public function loadLevel( levelData:LevelData ):void
+		public function loadLevel( levelData:LevelDataVO ):void
 		{
 			for( var i:int = 0; i < levelData.groundPoints.length; i++ )
 			{
@@ -492,11 +552,27 @@ package leveleditor
 				_finishMarker.x = levelData.finishPoint.x;
 				_finishMarker.y = levelData.finishPoint.y;
 			}
+
+			this.loadLibraryElements( levelData.libraryElements );
 		}
 
-		public function getLevelData():LevelData
+		private function loadLibraryElements( datas:Array ):void
 		{
-			var levelData:LevelData = new LevelData();
+			var length:int = datas.length;
+
+			for( var i:int = 0; i < length; i++ )
+			{
+				var libraryElementVO:LibraryElementVO = new LibraryElementVO( 'import', datas[i].className );
+				libraryElementVO.scale = datas[i].scale;
+				libraryElementVO.position = new Point( datas[i].x + this.x, datas[i].y + this.y );
+
+				this.addLibraryElement( libraryElementVO );
+			}
+		}
+
+		public function getLevelData():LevelDataVO
+		{
+			var levelData:LevelDataVO = new LevelDataVO();
 
 			for( var i:int = 0; i < _nodeViews.length; i++ )
 			{
@@ -507,8 +583,25 @@ package leveleditor
 			levelData.bridgePoints = _bridgeToolController.getBridgePoints();
 			levelData.startPoint = {x: _startMarker.x, y: _startMarker.y};
 			levelData.finishPoint = {x: _finishMarker.x, y: _finishMarker.y};
+			levelData.libraryElements = this.createLibraryElementExportData();
 
 			return levelData;
+		}
+
+		private function createLibraryElementExportData():Array
+		{
+			var result:Array = [];
+
+			var length:int = this._libraryElements.length;
+
+			for( var i:int = 0; i < length; i++ )
+			{
+				var libraryElementVO:LibraryElementVO = this._libraryElements[i].getLibraryElementVO();
+
+				result.push( { className: libraryElementVO.className, scale: libraryElementVO.scale, x: libraryElementVO.position.x, y: libraryElementVO.position.y } );
+			}
+
+			return result;
 		}
 
 		public function isWorldDragged():Boolean

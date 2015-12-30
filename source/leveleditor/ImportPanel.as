@@ -4,7 +4,7 @@ package leveleditor
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
 	
-	import leveleditor.data.LevelData;
+	import leveleditor.data.LevelDataVO;
 	import leveleditor.events.ImportEvent;
 	import leveleditor.events.MenuEvent;
 
@@ -51,7 +51,7 @@ package leveleditor
 		protected function startImport( e:MouseEvent ):void
 		{
 			var data:String = dialog.inputText.text;
-			var levelData:LevelData;
+			var levelData:LevelDataVO;
 			
 			try
 			{
@@ -65,9 +65,9 @@ package leveleditor
 			dispatchEvent( new ImportEvent( ImportEvent.DATA_IMPORTED, levelData ) );
 		}
 		
-		protected function convertJSONDataToLevelData( data:Object ):LevelData
+		protected function convertJSONDataToLevelData( data:Object ):LevelDataVO
 		{
-			var levelData:LevelData = new LevelData;
+			var levelData:LevelDataVO = new LevelDataVO;
 			
 			for ( var i:uint = 0; i < data.groundPoints.length; i++ )
 			{
@@ -91,13 +91,14 @@ package leveleditor
 			
 			levelData.startPoint = data.startPoint;
 			levelData.finishPoint = data.finishPoint;
-			
+			levelData.libraryElements = data.libraryElements;
+
 			return levelData;
 		}
 		
-		protected function convertLegacyDataToLevelData( data:String ):LevelData
+		protected function convertLegacyDataToLevelData( data:String ):LevelDataVO
 		{
-			var levelData:LevelData = new LevelData;
+			var levelData:LevelDataVO = new LevelDataVO;
 			
 			var mapLines:Array = data.split( "&" );
 			

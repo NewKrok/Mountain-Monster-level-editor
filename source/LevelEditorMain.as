@@ -7,12 +7,14 @@ package
 	
 	import leveleditor.Background;
 	import leveleditor.DeviceView;
+	import leveleditor.EditorLibrary;
 	import leveleditor.EditorWorld;
 	import leveleditor.ExportPanel;
 	import leveleditor.ImportPanel;
 	import leveleditor.Menu;
 	import leveleditor.SizeHelper;
 	import leveleditor.ZoomView;
+	import leveleditor.events.EditorLibraryEvent;
 	import leveleditor.events.EditorWorldEvent;
 	import leveleditor.events.ImportEvent;
 	import leveleditor.events.MenuEvent;
@@ -23,14 +25,15 @@ package
 	
 	public class LevelEditorMain extends Sprite
 	{
-		protected var _background:Background;
-		protected var _editorWorld:EditorWorld;
-		protected var _deviceView:DeviceView;
-		protected var _sizeHelper:SizeHelper;
-		protected var _zoomView:ZoomView;
-		protected var _menu:Menu;
-		protected var _importPanel:ImportPanel;
-		protected var _exportPanel:ExportPanel;
+		private var _background:Background;
+		private var _editorWorld:EditorWorld;
+		private var _deviceView:DeviceView;
+		private var _sizeHelper:SizeHelper;
+		private var _zoomView:ZoomView;
+		private var _menu:Menu;
+		private var _editorLibrary:EditorLibrary;
+		private var _importPanel:ImportPanel;
+		private var _exportPanel:ExportPanel;
 		
 		public function LevelEditorMain()
 		{
@@ -41,8 +44,8 @@ package
 			
 			FPPContextMenu.create( this );
 		}
-		
-		protected function inited( e:Event ):void
+
+		private function inited( e:Event ):void
 		{
 			removeEventListener( Event.ADDED_TO_STAGE, inited );
 			KeyboardOperator.init( stage );
@@ -67,6 +70,11 @@ package
 			_menu.addEventListener( MenuEvent.SET_CONTROL_TO_STAR, onSetControlToAddStarHandler );
 			_menu.addEventListener( MenuEvent.SET_CONTROL_TO_BRIDGE, onSetControlToAddBridgeHandler );
 			addChild( _menu );
+
+			this._editorLibrary = new EditorLibrary();
+			this._editorLibrary.addEventListener( EditorLibraryEvent.OPEN_REQUEST, onEditorLibraryOpenHandler )
+			this._editorLibrary.addEventListener( EditorLibraryEvent.ADD_ELEMENT_TO_WORLD_REQUEST, onAddelementToWorldRequestHandler )
+			this.addChild( this._editorLibrary );
 			
 			_editorWorld.jumpToStart( _deviceView.getCurrentDeviceViewPort( ) );
 			this._editorWorld.addEventListener( EditorWorldEvent.ON_VIEW_RESIZE, this.onEditorWorldResize );
@@ -78,14 +86,14 @@ package
 			addChild( _exportPanel = new ExportPanel );
 			_exportPanel.addEventListener( MenuEvent.CLOSE_REQUEST, onCloseExportPanelHandler );
 		}
-		
-		protected function onImportRequestHandler( e:MenuEvent ):void
+
+		private function onImportRequestHandler( e:MenuEvent ):void
 		{
 			_importPanel.show( );
 			KeyboardOperator.pause( );
 		}
 
-		protected function onEditorWorldResize( e:EditorWorldEvent ):void
+		private function onEditorWorldResize( e:EditorWorldEvent ):void
 		{
 			var zoomValue:Number = e.data as Number;
 
@@ -94,7 +102,7 @@ package
 			_zoomView.setZoom( zoomValue );
 		}
 
-		protected function onDataImportedHandler( e:ImportEvent ):void
+		private function onDataImportedHandler( e:ImportEvent ):void
 		{
 			_editorWorld.loadLevel( e.levelData );
 			
@@ -103,72 +111,94 @@ package
 			onCloseImportPanelHandler( new MenuEvent( MenuEvent.CLOSE_REQUEST ) );
 		}
 
-		protected function onCloseImportPanelHandler( e:MenuEvent ):void
+		private function onCloseImportPanelHandler( e:MenuEvent ):void
 		{
 			_importPanel.hide( );
 			KeyboardOperator.unPause( );
 		}
-		
-		protected function onExportRequestHandler( e:MenuEvent ):void
+
+		private function onExportRequestHandler( e:MenuEvent ):void
 		{
 			_exportPanel.show( _editorWorld.getLevelData( ) );
 			KeyboardOperator.pause( );
 		}
-		
-		protected function onCloseExportPanelHandler( e:MenuEvent ):void
+
+		private function onCloseExportPanelHandler( e:MenuEvent ):void
 		{
 			_exportPanel.hide( );
 			KeyboardOperator.unPause( );
 		}
 
-		protected function onChangeCameraVisibilityHandler( e:MenuEvent ):void
+		private function onChangeCameraVisibilityHandler( e:MenuEvent ):void
 		{
 			_deviceView.showNextViewport( );
 		}
 
-		protected function onJumpToStartHandler( e:MenuEvent ):void
+		private function onJumpToStartHandler( e:MenuEvent ):void
 		{
 			_editorWorld.jumpToStart( _deviceView.getCurrentDeviceViewPort( ) );
 		}
 
-		protected function onJumpToEndHandler( e:MenuEvent ):void
+		private function onJumpToEndHandler( e:MenuEvent ):void
 		{
 			_editorWorld.jumpToEnd( _deviceView.getCurrentDeviceViewPort( ) );
 		}
 
-		protected function zoomInHandler( e:MenuEvent ):void
+		private function zoomInHandler( e:MenuEvent ):void
 		{
 			_editorWorld.zoomIn();
 		}
 
-		protected function zoomOutHandler( e:MenuEvent ):void
+		private function zoomOutHandler( e:MenuEvent ):void
 		{
 			_editorWorld.zoomOut();
 		}
 
-		protected function onSetControlToSelectHandler( e:MenuEvent ):void
+		private function onSetControlToSelectHandler( e:MenuEvent ):void
 		{
 			_editorWorld.setControl( EditorWorld.CONTROL_TYPE_SELECT );
 		}
 
-		protected function onSetControlToAddNodeHandler( e:MenuEvent ):void
+		private function onSetControlToAddNodeHandler( e:MenuEvent ):void
 		{
 			_editorWorld.setControl( EditorWorld.CONTROL_TYPE_ADD_NODE );
+			this.closeEditorLibrary();
 		}
-		
-		protected function onSetControlToRemoveNodeHandler( e:MenuEvent ):void
+
+		private function onSetControlToRemoveNodeHandler( e:MenuEvent ):void
 		{
 			_editorWorld.setControl( EditorWorld.CONTROL_TYPE_REMOVE_NODE );
+			this.closeEditorLibrary();
 		}
 
-		protected function onSetControlToAddStarHandler( e:MenuEvent ):void
+		private function onSetControlToAddStarHandler( e:MenuEvent ):void
 		{
 			_editorWorld.setControl( EditorWorld.CONTROL_TYPE_ADD_STAR );
+			this.closeEditorLibrary();
 		}
 
-		protected function onSetControlToAddBridgeHandler( e:MenuEvent ):void
+		private function onSetControlToAddBridgeHandler( e:MenuEvent ):void
 		{
 			_editorWorld.setControl( EditorWorld.CONTROL_TYPE_ADD_BRIDGE );
+			this.closeEditorLibrary();
+		}
+
+		private function onEditorLibraryOpenHandler( e:EditorLibraryEvent ):void
+		{
+			this._menu.reset();
+		}
+
+		private function closeEditorLibrary():void
+		{
+			if ( this._editorLibrary )
+			{
+				this._editorLibrary.closeLibrary();
+			}
+		}
+
+		private function onAddelementToWorldRequestHandler( e:EditorLibraryEvent ):void
+		{
+			this._editorWorld.addLibraryElement( e.libraryElementVO );
 		}
 	}
 }

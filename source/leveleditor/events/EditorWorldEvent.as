@@ -2,7 +2,7 @@ package leveleditor.events
 {
 	import flash.events.Event;
 	
-	import leveleditor.data.LevelData;
+	import leveleditor.data.LevelDataVO;
 
 	public class EditorWorldEvent extends Event
 	{
