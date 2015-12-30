@@ -1,4 +1,4 @@
-package leveleditor
+﻿package leveleditor
 {
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
@@ -553,7 +553,10 @@ package leveleditor
 				_finishMarker.y = levelData.finishPoint.y;
 			}
 
-			this.loadLibraryElements( levelData.libraryElements );
+			if( levelData.libraryElements )
+			{
+				this.loadLibraryElements( levelData.libraryElements );
+			}
 		}
 
 		private function loadLibraryElements( datas:Array ):void
